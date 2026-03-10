@@ -1,0 +1,21 @@
+[package]
+name = "kura"
+version = "0.1.0"
+edition = "2024"
+
+description = "An LSM-based single-node key-value storage engine in Rust"
+repository = "https://github.com/velyune/kura"
+license = "MIT"
+readme = "README.md"
+
+keywords = [
+  "database",
+  "kv-store",
+  "lsm",
+]
+
+categories = [
+  "database-implementations"
+]
+
+[dependencies]
