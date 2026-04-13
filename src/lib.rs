@@ -1,6 +1,7 @@
 mod bootstrap;
 mod db;
 mod error;
+mod lock;
 mod options;
 
 pub use db::{Db, PrefixEntry};
