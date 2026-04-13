@@ -1,15 +1,30 @@
-use crate::{Options, Result};
+use crate::{
+    Options, Result,
+    bootstrap::{ensure_dir, ensure_layout},
+    lock::DbLock,
+};
 use std::path::{Path, PathBuf};
 
 #[derive(Debug)]
 pub struct Db {
     path: PathBuf,
     options: Options,
+    _lock: DbLock,
 }
 
 impl Db {
-    pub fn open(_path: impl AsRef<Path>, _options: Options) -> Result<Self> {
-        todo!("open")
+    pub fn open(path: impl AsRef<Path>, options: Options) -> Result<Self> {
+        let path = path.as_ref().to_path_buf();
+        ensure_dir(&path)?;
+
+        let lock = DbLock::acquire(&path)?;
+        ensure_layout(&path)?;
+
+        Ok(Self {
+            path,
+            options,
+            _lock: lock,
+        })
     }
 
     pub fn put(&self, _key: &[u8], _value: &[u8]) -> Result<()> {
