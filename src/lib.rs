@@ -1,6 +1,7 @@
 mod bootstrap;
 mod db;
 mod error;
+mod internal_key;
 mod lock;
 mod options;
 
