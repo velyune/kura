@@ -131,3 +131,64 @@ impl PartialOrd for InternalKeyRef<'_> {
         Some(self.cmp(other))
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn value_type_byte_mapping_is_stable() {
+        assert_eq!(ValueType::Value.to_byte(), 1);
+        assert_eq!(ValueType::Tombstone.to_byte(), 2);
+
+        assert_eq!(ValueType::from_byte(1), Some(ValueType::Value));
+        assert_eq!(ValueType::from_byte(2), Some(ValueType::Tombstone));
+        assert_eq!(ValueType::from_byte(0), None);
+        assert_eq!(ValueType::from_byte(255), None)
+    }
+
+    #[test]
+    fn orders_user_keys_ascending() {
+        let lhs = InternalKey::new(b"a".to_vec(), 1, ValueType::Value);
+        let rhs = InternalKey::new(b"b".to_vec(), 1, ValueType::Value);
+
+        assert_eq!(lhs.cmp(&rhs), Ordering::Less);
+        assert_eq!(lhs.cmp(&lhs), Ordering::Equal);
+        assert_eq!(rhs.cmp(&lhs), Ordering::Greater)
+    }
+
+    #[test]
+    fn orders_sequence_numbers_descending() {
+        let lhs = InternalKey::new(b"a".to_vec(), 1, ValueType::Value);
+        let rhs = InternalKey::new(b"a".to_vec(), 2, ValueType::Value);
+
+        assert_eq!(lhs.cmp(&rhs), Ordering::Greater);
+        assert_eq!(lhs.cmp(&lhs), Ordering::Equal);
+        assert_eq!(rhs.cmp(&lhs), Ordering::Less)
+    }
+
+    #[test]
+    fn orders_value_types_ascending() {
+        let lhs = InternalKey::new(b"a".to_vec(), 1, ValueType::Value);
+        let rhs = InternalKey::new(b"a".to_vec(), 1, ValueType::Tombstone);
+
+        assert_eq!(lhs.cmp(&rhs), Ordering::Less);
+        assert_eq!(lhs.cmp(&lhs), Ordering::Equal);
+        assert_eq!(rhs.cmp(&lhs), Ordering::Greater)
+    }
+
+    #[test]
+    fn newest_version_sorts_first_for_the_same_user_key() {
+        let mut keys = [
+            InternalKey::new(b"a".to_vec(), 1, ValueType::Value),
+            InternalKey::new(b"a".to_vec(), 3, ValueType::Value),
+            InternalKey::new(b"a".to_vec(), 2, ValueType::Value),
+        ];
+
+        keys.sort();
+
+        assert_eq!(keys[0].sequence_number(), 3);
+        assert_eq!(keys[1].sequence_number(), 2);
+        assert_eq!(keys[2].sequence_number(), 1);
+    }
+}
