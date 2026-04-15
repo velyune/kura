@@ -1,5 +1,6 @@
 #![allow(dead_code)]
 
+use crate::sequence::SequenceNumber;
 use std::cmp::Ordering;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
@@ -26,12 +27,12 @@ impl ValueType {
 #[derive(Eq, PartialEq)]
 pub struct InternalKey {
     user_key: Vec<u8>,
-    sequence_number: u64,
+    sequence_number: SequenceNumber,
     value_type: ValueType,
 }
 
 impl InternalKey {
-    pub fn new(user_key: Vec<u8>, sequence_number: u64, value_type: ValueType) -> Self {
+    pub fn new(user_key: Vec<u8>, sequence_number: SequenceNumber, value_type: ValueType) -> Self {
         Self {
             user_key,
             sequence_number,
@@ -43,7 +44,7 @@ impl InternalKey {
         &self.user_key
     }
 
-    pub fn sequence_number(&self) -> u64 {
+    pub fn sequence_number(&self) -> SequenceNumber {
         self.sequence_number
     }
 
@@ -63,12 +64,12 @@ impl InternalKey {
 #[derive(Eq, PartialEq)]
 pub struct InternalKeyRef<'a> {
     user_key: &'a [u8],
-    sequence_number: u64,
+    sequence_number: SequenceNumber,
     value_type: ValueType,
 }
 
 impl<'a> InternalKeyRef<'a> {
-    pub fn new(user_key: &'a [u8], sequence_number: u64, value_type: ValueType) -> Self {
+    pub fn new(user_key: &'a [u8], sequence_number: SequenceNumber, value_type: ValueType) -> Self {
         Self {
             user_key,
             sequence_number,
@@ -80,7 +81,7 @@ impl<'a> InternalKeyRef<'a> {
         self.user_key
     }
 
-    pub fn sequence_number(&self) -> u64 {
+    pub fn sequence_number(&self) -> SequenceNumber {
         self.sequence_number
     }
 
@@ -149,8 +150,8 @@ mod tests {
 
     #[test]
     fn orders_user_keys_ascending() {
-        let lhs = InternalKey::new(b"a".to_vec(), 1, ValueType::Value);
-        let rhs = InternalKey::new(b"b".to_vec(), 1, ValueType::Value);
+        let lhs = InternalKey::new(b"a".to_vec(), SequenceNumber::new(1), ValueType::Value);
+        let rhs = InternalKey::new(b"b".to_vec(), SequenceNumber::new(1), ValueType::Value);
 
         assert_eq!(lhs.cmp(&rhs), Ordering::Less);
         assert_eq!(lhs.cmp(&lhs), Ordering::Equal);
@@ -159,8 +160,8 @@ mod tests {
 
     #[test]
     fn orders_sequence_numbers_descending() {
-        let lhs = InternalKey::new(b"a".to_vec(), 1, ValueType::Value);
-        let rhs = InternalKey::new(b"a".to_vec(), 2, ValueType::Value);
+        let lhs = InternalKey::new(b"a".to_vec(), SequenceNumber::new(1), ValueType::Value);
+        let rhs = InternalKey::new(b"a".to_vec(), SequenceNumber::new(2), ValueType::Value);
 
         assert_eq!(lhs.cmp(&rhs), Ordering::Greater);
         assert_eq!(lhs.cmp(&lhs), Ordering::Equal);
@@ -169,8 +170,8 @@ mod tests {
 
     #[test]
     fn orders_value_types_ascending() {
-        let lhs = InternalKey::new(b"a".to_vec(), 1, ValueType::Value);
-        let rhs = InternalKey::new(b"a".to_vec(), 1, ValueType::Tombstone);
+        let lhs = InternalKey::new(b"a".to_vec(), SequenceNumber::new(1), ValueType::Value);
+        let rhs = InternalKey::new(b"a".to_vec(), SequenceNumber::new(1), ValueType::Tombstone);
 
         assert_eq!(lhs.cmp(&rhs), Ordering::Less);
         assert_eq!(lhs.cmp(&lhs), Ordering::Equal);
@@ -180,15 +181,15 @@ mod tests {
     #[test]
     fn newest_version_sorts_first_for_the_same_user_key() {
         let mut keys = [
-            InternalKey::new(b"a".to_vec(), 1, ValueType::Value),
-            InternalKey::new(b"a".to_vec(), 3, ValueType::Value),
-            InternalKey::new(b"a".to_vec(), 2, ValueType::Value),
+            InternalKey::new(b"a".to_vec(), SequenceNumber::new(1), ValueType::Value),
+            InternalKey::new(b"a".to_vec(), SequenceNumber::new(3), ValueType::Value),
+            InternalKey::new(b"a".to_vec(), SequenceNumber::new(2), ValueType::Value),
         ];
 
         keys.sort();
 
-        assert_eq!(keys[0].sequence_number(), 3);
-        assert_eq!(keys[1].sequence_number(), 2);
-        assert_eq!(keys[2].sequence_number(), 1);
+        assert_eq!(keys[0].sequence_number(), SequenceNumber::new(3));
+        assert_eq!(keys[1].sequence_number(), SequenceNumber::new(2));
+        assert_eq!(keys[2].sequence_number(), SequenceNumber::new(1));
     }
 }

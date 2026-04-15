@@ -1,3 +1,4 @@
+use crate::sequence::{SequenceAllocator, SequenceNumber};
 use crate::{
     Options, Result,
     bootstrap::{ensure_dir, ensure_layout},
@@ -9,6 +10,8 @@ use std::path::{Path, PathBuf};
 pub struct Db {
     path: PathBuf,
     options: Options,
+    #[expect(dead_code)]
+    sequence: SequenceAllocator,
     _lock: DbLock,
 }
 
@@ -20,9 +23,12 @@ impl Db {
         let lock = DbLock::acquire(&path)?;
         ensure_layout(&path)?;
 
+        let last_sequence = SequenceNumber::ZERO;
+
         Ok(Self {
             path,
             options,
+            sequence: SequenceAllocator::from_last_allocated(last_sequence),
             _lock: lock,
         })
     }
