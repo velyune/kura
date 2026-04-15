@@ -4,6 +4,7 @@ pub enum Error {
     InvalidLayout { message: String },
     InvalidArgument { message: &'static str },
     Locked,
+    SequenceOverflow,
 }
 
 impl From<std::io::Error> for Error {
