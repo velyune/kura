@@ -102,7 +102,7 @@ impl<'a> From<&'a InternalKey> for InternalKeyRef<'a> {
 /// 1. `user_key` in ascending lexicographic order
 /// 2. `sequence_number` in descending order
 /// 3. `value_type` in ascending order
-fn compare_internal_keys(lhs: &InternalKeyRef<'_>, rhs: &InternalKeyRef<'_>) -> Ordering {
+fn compare(lhs: &InternalKeyRef<'_>, rhs: &InternalKeyRef<'_>) -> Ordering {
     lhs.user_key()
         .cmp(rhs.user_key())
         .then_with(|| rhs.sequence_number().cmp(&lhs.sequence_number()))
@@ -111,7 +111,7 @@ fn compare_internal_keys(lhs: &InternalKeyRef<'_>, rhs: &InternalKeyRef<'_>) -> 
 
 impl Ord for InternalKey {
     fn cmp(&self, other: &Self) -> Ordering {
-        compare_internal_keys(&self.as_ref(), &other.as_ref())
+        compare(&self.as_ref(), &other.as_ref())
     }
 }
 
@@ -123,7 +123,7 @@ impl PartialOrd for InternalKey {
 
 impl Ord for InternalKeyRef<'_> {
     fn cmp(&self, other: &Self) -> Ordering {
-        compare_internal_keys(self, other)
+        compare(self, other)
     }
 }
 
