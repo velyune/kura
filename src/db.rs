@@ -1,8 +1,9 @@
-use crate::sequence::{SequenceAllocator, SequenceNumber};
 use crate::{
     Options, Result,
     bootstrap::{ensure_dir, ensure_layout},
     lock::DbLock,
+    manifest,
+    sequence::SequenceAllocator,
 };
 use std::path::{Path, PathBuf};
 
@@ -23,12 +24,12 @@ impl Db {
         let lock = DbLock::acquire(&path)?;
         ensure_layout(&path)?;
 
-        let last_sequence = SequenceNumber::ZERO;
+        let state = manifest::load_current(&path)?;
 
         Ok(Self {
             path,
             options,
-            sequence: SequenceAllocator::from_last_allocated(last_sequence),
+            sequence: SequenceAllocator::from_last_allocated(state.last_sequence()),
             _lock: lock,
         })
     }

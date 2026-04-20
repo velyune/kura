@@ -1,10 +1,12 @@
 #[derive(Debug)]
 pub enum Error {
     Io(std::io::Error),
+    Corruption { message: String },
     InvalidLayout { message: String },
     InvalidArgument { message: &'static str },
     Locked,
     SequenceOverflow,
+    EncodingLimitExceeded { message: String },
 }
 
 impl From<std::io::Error> for Error {
