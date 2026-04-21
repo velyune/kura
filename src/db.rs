@@ -1,10 +1,7 @@
-use crate::{
-    Options, Result,
-    bootstrap::{ensure_dir, ensure_layout},
-    lock::DbLock,
-    manifest,
-    sequence::SequenceAllocator,
-};
+mod classify;
+
+use self::classify::{DbState, classify};
+use crate::{Options, Result, bootstrap, lock::DbLock, manifest, sequence::SequenceAllocator};
 use std::path::{Path, PathBuf};
 
 #[derive(Debug)]
@@ -19,12 +16,24 @@ pub struct Db {
 impl Db {
     pub fn open(path: impl AsRef<Path>, options: Options) -> Result<Self> {
         let path = path.as_ref().to_path_buf();
-        ensure_dir(&path)?;
+        bootstrap::ensure_dir(&path)?;
 
         let lock = DbLock::acquire(&path)?;
-        ensure_layout(&path)?;
 
-        let state = manifest::load_current(&path)?;
+        let state = match classify(&path)? {
+            DbState::New => {
+                bootstrap::ensure_layout(&path)?;
+                manifest::bootstrap(&path)?
+            }
+            DbState::IncompleteBootstrap => {
+                bootstrap::validate_layout(&path)?;
+                manifest::recover_initial_current(&path)?
+            }
+            DbState::Existing => {
+                bootstrap::validate_layout(&path)?;
+                manifest::load_current(&path)?
+            }
+        };
 
         Ok(Self {
             path,
