@@ -55,8 +55,17 @@ pub fn ensure_dir(path: &Path) -> Result<()> {
     }
 }
 
+pub fn validate_layout(db_path: &Path) -> Result<()> {
+    validate_dir(db_path)?;
+
+    validate_dir(&db_path.join("wal"))?;
+    validate_dir(&db_path.join("sst"))?;
+    validate_dir(&db_path.join("tmp"))
+}
+
 pub fn ensure_layout(db_path: &Path) -> Result<()> {
     validate_dir(db_path)?;
+
     ensure_dir(&db_path.join("wal"))?;
     ensure_dir(&db_path.join("sst"))?;
     ensure_dir(&db_path.join("tmp"))
