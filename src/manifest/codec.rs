@@ -249,3 +249,120 @@ fn write_sstable_descriptor(file: &mut File, sstable: &SstableDescriptor) -> Res
 
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{
+        filename, manifest,
+        test_utils::{create_file, temp_db},
+    };
+
+    #[test]
+    fn write_then_load_roundtrips_manifest_state() {
+        let (_temp, db_path) = temp_db();
+        let manifest_path = db_path.join(filename::manifest(manifest::INITIAL_FILE_NUMBER));
+        let state = ManifestState::new(
+            7,
+            SequenceNumber::new(1000),
+            vec![3, 4],
+            vec![
+                SstableDescriptor::new(
+                    5,
+                    b"user:000".to_vec(),
+                    b"user:0499".to_vec(),
+                    SequenceNumber::new(1),
+                    SequenceNumber::new(500),
+                ),
+                SstableDescriptor::new(
+                    6,
+                    b"user:0500".to_vec(),
+                    b"user:0999".to_vec(),
+                    SequenceNumber::new(501),
+                    SequenceNumber::new(1000),
+                ),
+            ],
+        );
+
+        write(&manifest_path, &state).expect("write manifest state");
+        let loaded_state = load(&manifest_path).expect("load manifest state");
+
+        assert_eq!(loaded_state, state)
+    }
+
+    #[test]
+    fn load_rejects_missing_manifest_file() {
+        let (_temp, db_path) = temp_db();
+        let manifest_path = db_path.join(filename::manifest(manifest::INITIAL_FILE_NUMBER));
+
+        let err = load(&manifest_path).expect_err("load should reject missing manifest file");
+
+        assert!(matches!(err, Error::Corruption {message}
+                if message == format!("manifest not found: {}", manifest_path.display())))
+    }
+
+    #[test]
+    fn load_rejects_truncated_manifest_header() {
+        let (_temp, db_path) = temp_db();
+        let manifest_path = db_path.join(filename::manifest(manifest::INITIAL_FILE_NUMBER));
+
+        create_file(&manifest_path);
+        let err = load(&manifest_path).expect_err("load should reject truncated manifest header");
+
+        assert!(matches!(err, Error::Corruption {message}
+            if message == format!("manifest header is truncated while reading magic: {}", manifest_path.display())))
+    }
+
+    #[test]
+    fn load_rejects_invalid_manifest_magic() {
+        let (_temp, db_path) = temp_db();
+        let manifest_path = db_path.join(filename::manifest(manifest::INITIAL_FILE_NUMBER));
+
+        fs::write(
+            &manifest_path,
+            [
+                b"INVALID".as_slice(),
+                &MANIFEST_FORMAT_VERSION.to_le_bytes(),
+            ]
+            .concat(),
+        )
+        .expect("write manifest with invalid magic");
+        let err = load(&manifest_path).expect_err("load should reject invalid manifest magic");
+
+        assert!(matches!(err, Error::Corruption {message}
+            if message == format!("invalid manifest magic: {}", manifest_path.display())))
+    }
+
+    #[test]
+    fn load_rejects_unsupported_manifest_format_version() {
+        let (_temp, db_path) = temp_db();
+        let manifest_path = db_path.join(filename::manifest(manifest::INITIAL_FILE_NUMBER));
+
+        fs::write(
+            &manifest_path,
+            [MANIFEST_MAGIC, &(MANIFEST_FORMAT_VERSION + 1).to_le_bytes()].concat(),
+        )
+        .expect("write manifest with unsupported format version");
+        let err = load(&manifest_path)
+            .expect_err("load should reject unsupported manifest format version");
+
+        assert!(matches!(err, Error::Corruption {message}
+            if message == format!("unsupported manifest format version {} in: {}", MANIFEST_FORMAT_VERSION + 1, manifest_path.display())))
+    }
+
+    #[test]
+    fn load_rejects_truncated_manifest_snapshot() {
+        let (_temp, db_path) = temp_db();
+        let manifest_path = db_path.join(filename::manifest(manifest::INITIAL_FILE_NUMBER));
+
+        fs::write(
+            &manifest_path,
+            [MANIFEST_MAGIC, &MANIFEST_FORMAT_VERSION.to_le_bytes()].concat(),
+        )
+        .expect("write truncated manifest snapshot");
+        let err = load(&manifest_path).expect_err("load should reject truncated manifest snapshot");
+
+        assert!(matches!(err, Error::Corruption {message}
+            if message == format!("manifest snapshot is truncated while reading next file number: {}", manifest_path.display())))
+    }
+}

@@ -58,3 +58,58 @@ fn scan_manifests(path: &Path) -> Result<ManifestScan> {
 
     Ok(ManifestScan { count, has_initial })
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::test_utils::{create_file, temp_db};
+
+    #[test]
+    fn classifies_new_when_current_and_manifests_are_missing() {
+        let (_temp, db_path) = temp_db();
+
+        let state = classify(&db_path).expect("classify db state");
+        assert_eq!(state, DbState::New)
+    }
+
+    #[test]
+    fn classifies_incomplete_bootstrap_when_only_initial_manifest_exists() {
+        let (_temp, db_path) = temp_db();
+
+        create_file(&db_path.join(filename::manifest(manifest::INITIAL_FILE_NUMBER)));
+
+        let state = classify(&db_path).expect("classify db state");
+        assert_eq!(state, DbState::IncompleteBootstrap)
+    }
+
+    #[test]
+    fn classifies_existing_when_current_exists() {
+        let (_temp, db_path) = temp_db();
+
+        create_file(&db_path.join("CURRENT"));
+
+        let state = classify(&db_path).expect("classify db state");
+        assert_eq!(state, DbState::Existing)
+    }
+
+    #[test]
+    fn rejects_non_initial_manifest_without_current() {
+        let (_temp, db_path) = temp_db();
+
+        create_file(&db_path.join(filename::manifest(manifest::INITIAL_FILE_NUMBER + 1)));
+
+        let err = classify(&db_path).expect_err("classify should reject invalid db state");
+        assert!(matches!(err, Error::Corruption { .. }))
+    }
+
+    #[test]
+    fn rejects_multiple_manifests_without_current() {
+        let (_temp, db_path) = temp_db();
+
+        create_file(&db_path.join(filename::manifest(manifest::INITIAL_FILE_NUMBER)));
+        create_file(&db_path.join(filename::manifest(manifest::INITIAL_FILE_NUMBER + 1)));
+
+        let err = classify(&db_path).expect_err("classify should reject invalid db state");
+        assert!(matches!(err, Error::Corruption { .. }))
+    }
+}

@@ -1,7 +1,11 @@
 use kura::{Db, Error, Options};
-use std::path::PathBuf;
-use std::time::{Duration, Instant};
-use std::{env, fs, path::Path, process::Command, thread};
+use std::{
+    env, fs,
+    path::{Path, PathBuf},
+    process::Command,
+    thread,
+    time::{Duration, Instant},
+};
 use tempfile::tempdir;
 
 fn assert_is_file(path: &Path) {
@@ -27,6 +31,8 @@ fn wait_for_path(path: &Path, timeout: Duration) -> bool {
 
 #[test]
 fn open_bootstraps_database_layout() {
+    const INITIAL_MANIFEST_FILENAME: &str = "MANIFEST-00000000000000000001";
+
     let temp = tempdir().expect("create temp dir");
     let db_path = temp.path().join("db");
 
@@ -42,7 +48,11 @@ fn open_bootstraps_database_layout() {
     assert_is_file(&db_path.join("LOCK"));
     assert_is_dir(&db_path.join("wal"));
     assert_is_dir(&db_path.join("sst"));
-    assert_is_dir(&db_path.join("tmp"))
+    assert_is_dir(&db_path.join("tmp"));
+
+    let current = fs::read_to_string(db_path.join("CURRENT")).expect("read CURRENT");
+    assert_eq!(current, format!("{INITIAL_MANIFEST_FILENAME}\n"));
+    assert_is_file(&db_path.join(INITIAL_MANIFEST_FILENAME))
 }
 
 #[test]

@@ -75,3 +75,71 @@ pub(crate) fn read_bytes(
 
     Ok(value)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn read_le_reads_integers_and_advances_offset() {
+        let bytes = [
+            0x01, 0x00, // u16 = 1
+            0x02, 0x00, 0x00, 0x00, // u32 = 2
+            0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // u64 = 3
+        ];
+        let mut offset = 0;
+
+        let value_u16: u16 =
+            read_le(&bytes, &mut offset, Path::new("test"), "test", "u16").expect("read u16");
+        assert_eq!(value_u16, 1);
+        assert_eq!(offset, 2);
+
+        let value_u32: u32 =
+            read_le(&bytes, &mut offset, Path::new("test"), "test", "u32").expect("read u32");
+        assert_eq!(value_u32, 2);
+        assert_eq!(offset, 6);
+
+        let value_u64: u64 =
+            read_le(&bytes, &mut offset, Path::new("test"), "test", "u64").expect("read u64");
+        assert_eq!(value_u64, 3);
+        assert_eq!(offset, 14);
+    }
+
+    #[test]
+    fn read_le_returns_corruption_when_truncated() {
+        let bytes: &[u8] = &[0x01];
+        let mut offset = 0;
+
+        let err = read_le::<u16>(bytes, &mut offset, Path::new("test"), "context", "field")
+            .expect_err("read truncated value should return corruption");
+
+        assert!(matches!(err, Error::Corruption { message }
+            if message == "context is truncated while reading field: test"));
+        assert_eq!(offset, 0);
+    }
+
+    #[test]
+    fn read_bytes_reads_bytes_and_advances_offset() {
+        let bytes = b"abcd";
+        let mut offset = 1;
+
+        let value = read_bytes(bytes, &mut offset, 3, Path::new("test"), "context", "field")
+            .expect("read bytes");
+
+        assert_eq!(value, b"bcd");
+        assert_eq!(offset, 4)
+    }
+
+    #[test]
+    fn read_bytes_returns_corruption_when_truncated() {
+        let bytes = b"abcd";
+        let mut offset = 0;
+
+        let err = read_bytes(bytes, &mut offset, 5, Path::new("test"), "context", "field")
+            .expect_err("read truncated bytes should return corruption");
+
+        assert!(matches!(err, Error::Corruption {message}
+            if message == "context is truncated while reading field: test"));
+        assert_eq!(offset, 0)
+    }
+}

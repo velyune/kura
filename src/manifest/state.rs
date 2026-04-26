@@ -103,3 +103,15 @@ impl SstableDescriptor {
         self.max_sequence
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn initial_state_is_initial() {
+        let state = ManifestState::initial();
+
+        assert!(state.is_initial())
+    }
+}

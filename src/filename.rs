@@ -25,3 +25,55 @@ pub(crate) fn validate_manifest(filename: &str) -> Result<()> {
 
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn manifest_formats_file_number_with_zero_padding() {
+        assert_eq!(manifest(1), "MANIFEST-00000000000000000001");
+        assert_eq!(manifest(u64::MAX), "MANIFEST-18446744073709551615");
+    }
+
+    #[test]
+    fn manifest_number_parses_valid_manifest_filename() {
+        assert_eq!(manifest_number("MANIFEST-00000000000000000001"), Some(1));
+        assert_eq!(
+            manifest_number("MANIFEST-18446744073709551615"),
+            Some(u64::MAX)
+        );
+    }
+
+    #[test]
+    fn manifest_number_rejects_invalid_prefix() {
+        assert_eq!(manifest_number("00000000000000000001"), None);
+        assert_eq!(manifest_number("CURRENT-00000000000000000001"), None);
+    }
+
+    #[test]
+    fn manifest_number_rejects_wrong_width() {
+        assert_eq!(manifest_number("MANIFEST-1"), None);
+        assert_eq!(manifest_number("MANIFEST-000000000000000000001"), None);
+    }
+
+    #[test]
+    fn manifest_number_rejects_non_digits() {
+        assert_eq!(manifest_number("MANIFEST-0000000000000000000x"), None);
+        assert_eq!(manifest_number("MANIFEST-0000000000000000000."), None);
+    }
+
+    #[test]
+    fn manifest_number_rejects_u64_overflow() {
+        assert_eq!(manifest_number("MANIFEST-18446744073709551616"), None);
+    }
+
+    #[test]
+    fn validate_manifest_rejects_invalid_manifest_filename() {
+        let err = validate_manifest("MANIFEST-1")
+            .expect_err("validate manifest should reject invalid filename");
+
+        assert!(matches!(err, Error::Corruption { message }
+            if message == "invalid manifest filename: MANIFEST-1"));
+    }
+}
