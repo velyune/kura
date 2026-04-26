@@ -1,8 +1,14 @@
 use kura::{Db, Error, Options};
-use std::path::PathBuf;
-use std::time::{Duration, Instant};
-use std::{env, fs, path::Path, process::Command, thread};
+use std::{
+    env, fs,
+    path::{Path, PathBuf},
+    process::Command,
+    thread,
+    time::{Duration, Instant},
+};
 use tempfile::tempdir;
+
+const INITIAL_MANIFEST_FILENAME: &str = "MANIFEST-00000000000000000001";
 
 fn assert_is_file(path: &Path) {
     assert!(path.is_file(), "expected file at {}", path.display())
@@ -42,7 +48,28 @@ fn open_bootstraps_database_layout() {
     assert_is_file(&db_path.join("LOCK"));
     assert_is_dir(&db_path.join("wal"));
     assert_is_dir(&db_path.join("sst"));
-    assert_is_dir(&db_path.join("tmp"))
+    assert_is_dir(&db_path.join("tmp"));
+
+    let current = fs::read_to_string(db_path.join("CURRENT")).expect("read CURRENT");
+    assert_eq!(current, format!("{INITIAL_MANIFEST_FILENAME}\n"));
+    assert_is_file(&db_path.join(INITIAL_MANIFEST_FILENAME));
+}
+
+#[test]
+fn open_recovers_incomplete_initial_bootstrap() {
+    let temp = tempdir().expect("create temp dir");
+    let db_path = temp.path().join("db");
+    let current_path = db_path.join("CURRENT");
+
+    let db = Db::open(&db_path, Options::default()).expect("open new database");
+    drop(db);
+    fs::remove_file(&current_path).expect("remove CURRENT");
+
+    let reopened = Db::open(&db_path, Options::default()).expect("recover incomplete bootstrap");
+    assert_eq!(reopened.path(), db_path.as_path());
+
+    let current = fs::read_to_string(&current_path).expect("read recovered CURRENT");
+    assert_eq!(current, format!("{INITIAL_MANIFEST_FILENAME}\n"));
 }
 
 #[test]
@@ -129,4 +156,41 @@ fn open_succeeds_after_drop_releases_lock() {
         Db::open(&db_path, Options::default()).expect("reopen after drop should succeed");
 
     assert_eq!(reopened.path(), db_path.as_path())
+}
+
+#[test]
+fn open_rejects_incomplete_bootstrap_with_non_initial_manifest() {
+    const NON_INITIAL_MANIFEST_BYTES: &[u8] = &[
+        b'K', b'U', b'R', b'A', b'M', b'N', b'F', // initial magic bytes
+        1, 0, // initial format version: u16
+        1, 0, 0, 0, 0, 0, 0, 0, // non-initial next file number: u64
+        0, 0, 0, 0, 0, 0, 0, 0, // initial last sequence: u64
+        0, 0, 0, 0, // initial WAL file count: u32
+        0, 0, 0, 0, // initial SSTable count: u32
+    ];
+
+    let temp = tempdir().expect("create temp dir");
+    let db_path = temp.path().join("db");
+    let current_path = db_path.join("CURRENT");
+    let manifest_path = db_path.join(INITIAL_MANIFEST_FILENAME);
+
+    let db = Db::open(&db_path, Options::default()).expect("open new database");
+    drop(db);
+    fs::remove_file(&current_path).expect("remove CURRENT");
+    fs::write(&manifest_path, NON_INITIAL_MANIFEST_BYTES).expect("write non-initial manifest");
+
+    let err = Db::open(&db_path, Options::default())
+        .expect_err("open should reject non-initial incomplete bootstrap manifest");
+
+    assert!(matches!(err, Error::Corruption {message}
+        if message == format!(
+            "initial manifest contains non-initial state: {}",
+            manifest_path.display()
+        )
+    ));
+
+    assert!(
+        !current_path.exists(),
+        "CURRENT should not be published for non-initial MANIFEST"
+    );
 }
