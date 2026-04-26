@@ -10,6 +10,9 @@ mod options;
 mod platform;
 mod sequence;
 
+#[cfg(test)]
+mod test_utils;
+
 pub use db::{Db, PrefixEntry};
 pub use error::{Error, Result};
 pub use options::{Options, SyncMode};
