@@ -1,10 +1,10 @@
-#[derive(Clone, Copy, Debug)]
+#[derive(Debug, Copy, Clone)]
 pub enum SyncMode {
     Always,
     Manual,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Debug, Clone)]
 pub struct Options {
     pub sync_mode: SyncMode,
     pub memtable_bytes: usize,

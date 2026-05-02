@@ -36,15 +36,15 @@ fn validate_entry(path: &Path, entry_type: EntryType, mode: ExistenceMode) -> Re
     }
 }
 
-pub fn validate_optional_file(path: &Path) -> Result<()> {
+pub(crate) fn validate_optional_file(path: &Path) -> Result<()> {
     validate_entry(path, EntryType::File, ExistenceMode::AllowMissing)
 }
 
-pub fn validate_dir(path: &Path) -> Result<()> {
+pub(crate) fn validate_dir(path: &Path) -> Result<()> {
     validate_entry(path, EntryType::Directory, ExistenceMode::MustExist)
 }
 
-pub fn ensure_dir(path: &Path) -> Result<()> {
+pub(crate) fn ensure_dir(path: &Path) -> Result<()> {
     match fs::metadata(path) {
         Ok(_) => validate_dir(path),
         Err(err) if err.kind() == ErrorKind::NotFound => {
@@ -55,7 +55,7 @@ pub fn ensure_dir(path: &Path) -> Result<()> {
     }
 }
 
-pub fn validate_layout(db_path: &Path) -> Result<()> {
+pub(crate) fn validate_layout(db_path: &Path) -> Result<()> {
     validate_dir(db_path)?;
 
     validate_dir(&db_path.join("wal"))?;
@@ -63,7 +63,7 @@ pub fn validate_layout(db_path: &Path) -> Result<()> {
     validate_dir(&db_path.join("tmp"))
 }
 
-pub fn ensure_layout(db_path: &Path) -> Result<()> {
+pub(crate) fn ensure_layout(db_path: &Path) -> Result<()> {
     validate_dir(db_path)?;
 
     ensure_dir(&db_path.join("wal"))?;

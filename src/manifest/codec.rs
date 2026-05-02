@@ -324,7 +324,7 @@ mod tests {
         let err = load(&manifest_path).expect_err("load should reject missing manifest file");
 
         assert!(matches!(err, Error::Corruption {message}
-                if message == format!(
+            if message == format!(
                 "manifest not found: {}",
                 manifest_path.display()
             )

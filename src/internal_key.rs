@@ -5,17 +5,17 @@ use std::cmp::Ordering;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 #[repr(u8)]
-pub enum ValueType {
+pub(crate) enum ValueType {
     Value = 1,
     Tombstone = 2,
 }
 
 impl ValueType {
-    pub const fn to_byte(self) -> u8 {
+    pub(crate) const fn to_byte(self) -> u8 {
         self as u8
     }
 
-    pub const fn from_byte(byte: u8) -> Option<Self> {
+    pub(crate) const fn from_byte(byte: u8) -> Option<Self> {
         match byte {
             1 => Some(Self::Value),
             2 => Some(Self::Tombstone),
@@ -25,14 +25,18 @@ impl ValueType {
 }
 
 #[derive(Eq, PartialEq)]
-pub struct InternalKey {
+pub(crate) struct InternalKey {
     user_key: Vec<u8>,
     sequence_number: SequenceNumber,
     value_type: ValueType,
 }
 
 impl InternalKey {
-    pub fn new(user_key: Vec<u8>, sequence_number: SequenceNumber, value_type: ValueType) -> Self {
+    pub(crate) fn new(
+        user_key: Vec<u8>,
+        sequence_number: SequenceNumber,
+        value_type: ValueType,
+    ) -> Self {
         Self {
             user_key,
             sequence_number,
@@ -40,19 +44,19 @@ impl InternalKey {
         }
     }
 
-    pub fn user_key(&self) -> &[u8] {
+    pub(crate) fn user_key(&self) -> &[u8] {
         &self.user_key
     }
 
-    pub fn sequence_number(&self) -> SequenceNumber {
+    pub(crate) fn sequence_number(&self) -> SequenceNumber {
         self.sequence_number
     }
 
-    pub fn value_type(&self) -> ValueType {
+    pub(crate) fn value_type(&self) -> ValueType {
         self.value_type
     }
 
-    pub fn as_ref(&self) -> InternalKeyRef<'_> {
+    pub(crate) fn as_ref(&self) -> InternalKeyRef<'_> {
         InternalKeyRef {
             user_key: &self.user_key,
             sequence_number: self.sequence_number,
@@ -62,14 +66,18 @@ impl InternalKey {
 }
 
 #[derive(Eq, PartialEq)]
-pub struct InternalKeyRef<'a> {
+pub(crate) struct InternalKeyRef<'a> {
     user_key: &'a [u8],
     sequence_number: SequenceNumber,
     value_type: ValueType,
 }
 
 impl<'a> InternalKeyRef<'a> {
-    pub fn new(user_key: &'a [u8], sequence_number: SequenceNumber, value_type: ValueType) -> Self {
+    pub(crate) fn new(
+        user_key: &'a [u8],
+        sequence_number: SequenceNumber,
+        value_type: ValueType,
+    ) -> Self {
         Self {
             user_key,
             sequence_number,
@@ -77,26 +85,18 @@ impl<'a> InternalKeyRef<'a> {
         }
     }
 
-    pub fn user_key(&self) -> &'a [u8] {
+    pub(crate) fn user_key(&self) -> &'a [u8] {
         self.user_key
     }
 
-    pub fn sequence_number(&self) -> SequenceNumber {
+    pub(crate) fn sequence_number(&self) -> SequenceNumber {
         self.sequence_number
     }
 
-    pub fn value_type(&self) -> ValueType {
+    pub(crate) fn value_type(&self) -> ValueType {
         self.value_type
     }
 }
-
-/*
-impl<'a> From<&'a InternalKey> for InternalKeyRef<'a> {
-    fn from(value: &'a InternalKey) -> Self {
-        value.as_ref()
-    }
-}
-*/
 
 /// Compares internal keys by:
 /// 1. `user_key` in ascending lexicographic order
@@ -138,24 +138,13 @@ mod tests {
     use super::*;
 
     #[test]
-    fn value_type_byte_mapping_is_stable() {
-        assert_eq!(ValueType::Value.to_byte(), 1);
-        assert_eq!(ValueType::Tombstone.to_byte(), 2);
-
-        assert_eq!(ValueType::from_byte(1), Some(ValueType::Value));
-        assert_eq!(ValueType::from_byte(2), Some(ValueType::Tombstone));
-        assert_eq!(ValueType::from_byte(0), None);
-        assert_eq!(ValueType::from_byte(255), None)
-    }
-
-    #[test]
     fn orders_user_keys_ascending() {
         let lhs = InternalKey::new(b"a".to_vec(), SequenceNumber::new(1), ValueType::Value);
         let rhs = InternalKey::new(b"b".to_vec(), SequenceNumber::new(1), ValueType::Value);
 
         assert_eq!(lhs.cmp(&rhs), Ordering::Less);
         assert_eq!(lhs.cmp(&lhs), Ordering::Equal);
-        assert_eq!(rhs.cmp(&lhs), Ordering::Greater)
+        assert_eq!(rhs.cmp(&lhs), Ordering::Greater);
     }
 
     #[test]
@@ -165,7 +154,7 @@ mod tests {
 
         assert_eq!(lhs.cmp(&rhs), Ordering::Greater);
         assert_eq!(lhs.cmp(&lhs), Ordering::Equal);
-        assert_eq!(rhs.cmp(&lhs), Ordering::Less)
+        assert_eq!(rhs.cmp(&lhs), Ordering::Less);
     }
 
     #[test]
@@ -175,7 +164,7 @@ mod tests {
 
         assert_eq!(lhs.cmp(&rhs), Ordering::Less);
         assert_eq!(lhs.cmp(&lhs), Ordering::Equal);
-        assert_eq!(rhs.cmp(&lhs), Ordering::Greater)
+        assert_eq!(rhs.cmp(&lhs), Ordering::Greater);
     }
 
     #[test]
@@ -191,5 +180,16 @@ mod tests {
         assert_eq!(keys[0].sequence_number(), SequenceNumber::new(3));
         assert_eq!(keys[1].sequence_number(), SequenceNumber::new(2));
         assert_eq!(keys[2].sequence_number(), SequenceNumber::new(1));
+    }
+
+    #[test]
+    fn value_type_byte_mapping_is_stable() {
+        assert_eq!(ValueType::Value.to_byte(), 1);
+        assert_eq!(ValueType::Tombstone.to_byte(), 2);
+
+        assert_eq!(ValueType::from_byte(1), Some(ValueType::Value));
+        assert_eq!(ValueType::from_byte(2), Some(ValueType::Tombstone));
+        assert_eq!(ValueType::from_byte(0), None);
+        assert_eq!(ValueType::from_byte(255), None);
     }
 }

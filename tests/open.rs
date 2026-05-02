@@ -78,7 +78,7 @@ fn open_rejects_invalid_layout() {
     let db_path = temp.path().join("db");
 
     fs::create_dir_all(&db_path).expect("create db root");
-    fs::write(db_path.join("wal"), b"not a directory").expect("create \"wal\" file");
+    fs::write(db_path.join("wal"), b"not a directory").expect("create WAL file");
 
     let err = Db::open(&db_path, Options::default())
         .expect_err("expected open to fail for invalid layout");
@@ -87,7 +87,7 @@ fn open_rejects_invalid_layout() {
         matches!(err, Error::InvalidLayout { .. }),
         "expected Error::InvalidLayout, got {:?}",
         err
-    )
+    );
 }
 
 #[test]
@@ -123,7 +123,7 @@ fn open_returns_locked_while_database_is_locked_by_another_process() {
 
     fs::write(&release_path, b"release").expect("write release signal");
     let status = child.wait().expect("wait for child process");
-    assert!(status.success(), "child process should exit successfully")
+    assert!(status.success(), "child process should exit successfully");
 }
 
 #[test]
@@ -141,7 +141,7 @@ fn child_process_holds_database_lock() {
     assert!(
         wait_for_path(&release_path, Duration::from_secs(10)),
         "timed out waiting for child release signal"
-    )
+    );
 }
 
 #[test]
@@ -155,7 +155,7 @@ fn open_succeeds_after_drop_releases_lock() {
     let reopened =
         Db::open(&db_path, Options::default()).expect("reopen after drop should succeed");
 
-    assert_eq!(reopened.path(), db_path.as_path())
+    assert_eq!(reopened.path(), db_path.as_path());
 }
 
 #[test]

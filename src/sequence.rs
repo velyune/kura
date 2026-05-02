@@ -4,40 +4,40 @@ use crate::{Error, Result};
 use std::sync::atomic::{AtomicU64, Ordering};
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]
-pub struct SequenceNumber(u64);
+pub(crate) struct SequenceNumber(u64);
 
 impl SequenceNumber {
-    pub const ZERO: Self = Self(0);
+    pub(crate) const ZERO: Self = Self(0);
 
-    pub const fn new(value: u64) -> Self {
+    pub(crate) const fn new(value: u64) -> Self {
         Self(value)
     }
 
-    pub const fn get(self) -> u64 {
+    pub(crate) const fn get(self) -> u64 {
         self.0
     }
 }
 
 #[derive(Debug)]
-pub struct SequenceAllocator {
+pub(crate) struct SequenceAllocator {
     last_allocated: AtomicU64,
 }
 
 impl SequenceAllocator {
-    pub const fn new() -> Self {
+    pub(crate) const fn new() -> Self {
         Self::from_last_allocated(SequenceNumber::ZERO)
     }
 
-    pub const fn from_last_allocated(last_allocated: SequenceNumber) -> Self {
+    pub(crate) const fn from_last_allocated(last_allocated: SequenceNumber) -> Self {
         Self {
             last_allocated: AtomicU64::new(last_allocated.get()),
         }
     }
 
-    pub fn allocate(&self) -> Result<SequenceNumber> {
+    pub(crate) fn allocate(&self) -> Result<SequenceNumber> {
         let previous = self
             .last_allocated
-            .fetch_update(Ordering::SeqCst, Ordering::SeqCst, |current| {
+            .try_update(Ordering::SeqCst, Ordering::SeqCst, |current| {
                 current.checked_add(1)
             })
             .map_err(|_| Error::SequenceOverflow)?;
@@ -45,19 +45,13 @@ impl SequenceAllocator {
         Ok(SequenceNumber::new(previous + 1))
     }
 
-    pub fn last_allocated(&self) -> SequenceNumber {
+    pub(crate) fn last_allocated(&self) -> SequenceNumber {
         SequenceNumber::new(self.last_allocated.load(Ordering::SeqCst))
     }
 
-    pub fn observe_recovered(&self, recovered: SequenceNumber) {
+    pub(crate) fn observe_recovered(&self, recovered: SequenceNumber) {
         self.last_allocated
             .fetch_max(recovered.get(), Ordering::SeqCst);
-    }
-}
-
-impl Default for SequenceAllocator {
-    fn default() -> Self {
-        Self::new()
     }
 }
 
@@ -75,7 +69,7 @@ mod tests {
         assert_eq!(allocator.allocate().expect(EXPECT), SequenceNumber::new(1));
         assert_eq!(allocator.allocate().expect(EXPECT), SequenceNumber::new(2));
         assert_eq!(allocator.allocate().expect(EXPECT), SequenceNumber::new(3));
-        assert_eq!(allocator.last_allocated(), SequenceNumber::new(3))
+        assert_eq!(allocator.last_allocated(), SequenceNumber::new(3));
     }
 
     #[test]
@@ -83,14 +77,14 @@ mod tests {
         let allocator = SequenceAllocator::from_last_allocated(SequenceNumber::new(2));
 
         assert_eq!(allocator.allocate().expect(EXPECT), SequenceNumber::new(3));
-        assert_eq!(allocator.allocate().expect(EXPECT), SequenceNumber::new(4))
+        assert_eq!(allocator.allocate().expect(EXPECT), SequenceNumber::new(4));
     }
 
     #[test]
     fn allocate_returns_sequence_overflow_at_u64_max() {
         let allocator = SequenceAllocator::from_last_allocated(SequenceNumber::new(u64::MAX));
 
-        assert!(matches!(allocator.allocate(), Err(Error::SequenceOverflow)))
+        assert!(matches!(allocator.allocate(), Err(Error::SequenceOverflow)));
     }
 
     #[test]
@@ -118,7 +112,7 @@ mod tests {
             .map(SequenceNumber)
             .collect();
 
-        assert_eq!(sequences, expected)
+        assert_eq!(sequences, expected);
     }
 
     #[test]
@@ -131,6 +125,6 @@ mod tests {
         allocator.observe_recovered(SequenceNumber::new(2));
 
         assert_eq!(allocator.last_allocated(), SequenceNumber::new(10));
-        assert_eq!(allocator.allocate().expect(EXPECT), SequenceNumber::new(11))
+        assert_eq!(allocator.allocate().expect(EXPECT), SequenceNumber::new(11));
     }
 }

@@ -72,6 +72,7 @@ impl Db {
     }
 }
 
+#[derive(Debug)]
 pub struct PrefixEntry {
     pub key: Vec<u8>,
     pub value: Vec<u8>,

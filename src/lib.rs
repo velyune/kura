@@ -1,3 +1,12 @@
+#![deny(unsafe_code)]
+#![warn(
+    unused,
+    unused_crate_dependencies,
+    unreachable_pub,
+    missing_debug_implementations,
+    deprecated_in_future
+)]
+
 mod binary;
 mod bootstrap;
 mod db;
