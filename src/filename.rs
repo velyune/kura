@@ -27,6 +27,7 @@ pub(crate) fn validate_manifest(filename: &str) -> Result<()> {
 }
 
 #[cfg(test)]
+#[cfg_attr(coverage_nightly, coverage(off))]
 mod tests {
     use super::*;
 

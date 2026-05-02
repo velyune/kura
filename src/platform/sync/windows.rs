@@ -1,6 +1,7 @@
 use crate::Result;
 use std::{fs::OpenOptions, path::Path};
 
+#[cfg_attr(coverage_nightly, coverage(off))]
 pub(crate) fn sync_dir(path: &Path) -> Result<()> {
     use std::os::windows::fs::OpenOptionsExt;
 

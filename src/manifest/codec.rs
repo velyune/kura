@@ -257,6 +257,7 @@ fn write_sstable_descriptor(file: &mut File, sstable: &SstableDescriptor) -> Res
 }
 
 #[cfg(test)]
+#[cfg_attr(coverage_nightly, coverage(off))]
 mod tests {
     use super::*;
     use crate::{

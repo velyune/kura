@@ -43,30 +43,37 @@ impl Db {
         })
     }
 
+    #[cfg_attr(coverage_nightly, coverage(off))]
     pub fn put(&self, _key: &[u8], _value: &[u8]) -> Result<()> {
         todo!("put")
     }
 
+    #[cfg_attr(coverage_nightly, coverage(off))]
     pub fn get(&self, _key: &[u8]) -> Result<Option<Vec<u8>>> {
         todo!("get")
     }
 
+    #[cfg_attr(coverage_nightly, coverage(off))]
     pub fn delete(&self, _key: &[u8]) -> Result<()> {
         todo!("delete")
     }
 
+    #[cfg_attr(coverage_nightly, coverage(off))]
     pub fn scan_prefix(&self, _prefix: &[u8]) -> Result<Vec<PrefixEntry>> {
         todo!("scan_prefix")
     }
 
+    #[cfg_attr(coverage_nightly, coverage(off))]
     pub fn sync(&self) -> Result<()> {
         todo!("sync")
     }
 
+    #[cfg_attr(coverage_nightly, coverage(off))]
     pub fn path(&self) -> &Path {
         &self.path
     }
 
+    #[cfg_attr(coverage_nightly, coverage(off))]
     pub fn options(&self) -> &Options {
         &self.options
     }

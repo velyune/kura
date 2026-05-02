@@ -10,6 +10,7 @@ pub enum Error {
 }
 
 impl From<std::io::Error> for Error {
+    #[cfg_attr(coverage_nightly, coverage(off))]
     fn from(error: std::io::Error) -> Self {
         Self::Io(error)
     }

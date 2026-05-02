@@ -60,6 +60,7 @@ fn scan_manifests(path: &Path) -> Result<ManifestScan> {
 }
 
 #[cfg(test)]
+#[cfg_attr(coverage_nightly, coverage(off))]
 mod tests {
     use super::*;
     use crate::test_utils::{create_file, temp_db};

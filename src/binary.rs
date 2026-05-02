@@ -77,6 +77,7 @@ pub(crate) fn read_bytes(
 }
 
 #[cfg(test)]
+#[cfg_attr(coverage_nightly, coverage(off))]
 mod tests {
     use super::*;
 

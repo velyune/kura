@@ -1,3 +1,4 @@
+#![cfg_attr(coverage_nightly, feature(coverage_attribute))]
 #![deny(unsafe_code)]
 #![warn(
     unused,

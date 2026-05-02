@@ -46,6 +46,7 @@ pub(super) fn publish(db_path: &Path, manifest_filename: &str) -> Result<()> {
 }
 
 #[cfg(test)]
+#[cfg_attr(coverage_nightly, coverage(off))]
 mod tests {
     use super::*;
     use crate::{manifest, test_utils::temp_db};
