@@ -18,7 +18,7 @@ categories = [
   "database-implementations"
 ]
 
-[dependencies]
+[target.'cfg(any(unix, windows))'.dependencies]
 fs2 = "0.4.3"
 
 [dev-dependencies]

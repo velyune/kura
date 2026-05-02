@@ -7,13 +7,15 @@
     deprecated_in_future
 )]
 
+#[cfg(not(any(unix, windows)))]
+compile_error!("Kura currently supports only Unix and Windows targets.");
+
 mod binary;
 mod bootstrap;
 mod db;
 mod error;
 mod filename;
 mod internal_key;
-mod lock;
 mod manifest;
 mod options;
 mod platform;

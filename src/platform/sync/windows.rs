@@ -1,7 +1,6 @@
 use crate::Result;
 use std::{fs::OpenOptions, path::Path};
 
-#[cfg(windows)]
 pub(crate) fn sync_dir(path: &Path) -> Result<()> {
     use std::os::windows::fs::OpenOptionsExt;
 

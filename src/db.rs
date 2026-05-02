@@ -1,7 +1,7 @@
 mod classify;
 
 use self::classify::{DbState, classify};
-use crate::{Options, Result, bootstrap, lock::DbLock, manifest, sequence::SequenceAllocator};
+use crate::{Options, Result, bootstrap, manifest, platform::DbLock, sequence::SequenceAllocator};
 use std::path::{Path, PathBuf};
 
 #[derive(Debug)]

@@ -1,9 +1,5 @@
-#[cfg(unix)]
-mod unix;
-#[cfg(windows)]
-mod windows;
+mod lock;
+mod sync;
 
-#[cfg(unix)]
-pub(crate) use unix::*;
-#[cfg(windows)]
-pub(crate) use windows::*;
+pub(crate) use lock::*;
+pub(crate) use sync::*;
