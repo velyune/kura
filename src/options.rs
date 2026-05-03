@@ -1,4 +1,4 @@
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum SyncMode {
     Always,
     Manual,
@@ -18,5 +18,19 @@ impl Default for Options {
             memtable_bytes: 4 * 1024 * 1024,
             compaction_trigger_tables: 4,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn default_options_use_documented_values() {
+        let options = Options::default();
+
+        assert_eq!(options.sync_mode, SyncMode::Always);
+        assert_eq!(options.memtable_bytes, 4 * 1024 * 1024);
+        assert_eq!(options.compaction_trigger_tables, 4);
     }
 }

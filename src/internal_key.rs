@@ -139,47 +139,81 @@ mod tests {
 
     #[test]
     fn orders_user_keys_ascending() {
-        let lhs = InternalKey::new(b"a".to_vec(), SequenceNumber::new(1), ValueType::Value);
-        let rhs = InternalKey::new(b"b".to_vec(), SequenceNumber::new(1), ValueType::Value);
+        let lhs_owned = InternalKey::new(b"a".to_vec(), SequenceNumber::new(1), ValueType::Value);
+        let rhs_owned = InternalKey::new(b"b".to_vec(), SequenceNumber::new(1), ValueType::Value);
 
-        assert_eq!(lhs.cmp(&rhs), Ordering::Less);
-        assert_eq!(lhs.cmp(&lhs), Ordering::Equal);
-        assert_eq!(rhs.cmp(&lhs), Ordering::Greater);
+        assert_eq!(lhs_owned.cmp(&rhs_owned), Ordering::Less);
+        assert_eq!(lhs_owned.cmp(&lhs_owned), Ordering::Equal);
+        assert_eq!(rhs_owned.cmp(&lhs_owned), Ordering::Greater);
+
+        let lhs_borrowed = InternalKeyRef::new(b"a", SequenceNumber::new(1), ValueType::Value);
+        let rhs_borrowed = InternalKeyRef::new(b"b", SequenceNumber::new(1), ValueType::Value);
+
+        assert_eq!(lhs_borrowed.cmp(&rhs_borrowed), Ordering::Less);
+        assert_eq!(lhs_borrowed.cmp(&lhs_borrowed), Ordering::Equal);
+        assert_eq!(rhs_borrowed.cmp(&lhs_borrowed), Ordering::Greater);
     }
 
     #[test]
     fn orders_sequence_numbers_descending() {
-        let lhs = InternalKey::new(b"a".to_vec(), SequenceNumber::new(1), ValueType::Value);
-        let rhs = InternalKey::new(b"a".to_vec(), SequenceNumber::new(2), ValueType::Value);
+        let lhs_owned = InternalKey::new(b"a".to_vec(), SequenceNumber::new(1), ValueType::Value);
+        let rhs_owned = InternalKey::new(b"a".to_vec(), SequenceNumber::new(2), ValueType::Value);
 
-        assert_eq!(lhs.cmp(&rhs), Ordering::Greater);
-        assert_eq!(lhs.cmp(&lhs), Ordering::Equal);
-        assert_eq!(rhs.cmp(&lhs), Ordering::Less);
+        assert_eq!(lhs_owned.cmp(&rhs_owned), Ordering::Greater);
+        assert_eq!(lhs_owned.cmp(&lhs_owned), Ordering::Equal);
+        assert_eq!(rhs_owned.cmp(&lhs_owned), Ordering::Less);
+
+        let lhs_borrowed = InternalKeyRef::new(b"a", SequenceNumber::new(1), ValueType::Value);
+        let rhs_borrowed = InternalKeyRef::new(b"a", SequenceNumber::new(2), ValueType::Value);
+
+        assert_eq!(lhs_borrowed.cmp(&rhs_borrowed), Ordering::Greater);
+        assert_eq!(lhs_borrowed.cmp(&lhs_borrowed), Ordering::Equal);
+        assert_eq!(rhs_borrowed.cmp(&lhs_borrowed), Ordering::Less);
     }
 
     #[test]
     fn orders_value_types_ascending() {
-        let lhs = InternalKey::new(b"a".to_vec(), SequenceNumber::new(1), ValueType::Value);
-        let rhs = InternalKey::new(b"a".to_vec(), SequenceNumber::new(1), ValueType::Tombstone);
+        let lhs_owned = InternalKey::new(b"a".to_vec(), SequenceNumber::new(1), ValueType::Value);
+        let rhs_owned =
+            InternalKey::new(b"a".to_vec(), SequenceNumber::new(1), ValueType::Tombstone);
 
-        assert_eq!(lhs.cmp(&rhs), Ordering::Less);
-        assert_eq!(lhs.cmp(&lhs), Ordering::Equal);
-        assert_eq!(rhs.cmp(&lhs), Ordering::Greater);
+        assert_eq!(lhs_owned.cmp(&rhs_owned), Ordering::Less);
+        assert_eq!(lhs_owned.cmp(&lhs_owned), Ordering::Equal);
+        assert_eq!(rhs_owned.cmp(&lhs_owned), Ordering::Greater);
+
+        let lhs_borrowed = InternalKeyRef::new(b"a", SequenceNumber::new(1), ValueType::Value);
+        let rhs_borrowed = InternalKeyRef::new(b"a", SequenceNumber::new(1), ValueType::Tombstone);
+
+        assert_eq!(lhs_borrowed.cmp(&rhs_borrowed), Ordering::Less);
+        assert_eq!(lhs_borrowed.cmp(&lhs_borrowed), Ordering::Equal);
+        assert_eq!(rhs_borrowed.cmp(&lhs_borrowed), Ordering::Greater);
     }
 
     #[test]
     fn newest_version_sorts_first_for_the_same_user_key() {
-        let mut keys = [
+        let mut keys_owned = [
             InternalKey::new(b"a".to_vec(), SequenceNumber::new(1), ValueType::Value),
             InternalKey::new(b"a".to_vec(), SequenceNumber::new(3), ValueType::Value),
             InternalKey::new(b"a".to_vec(), SequenceNumber::new(2), ValueType::Value),
         ];
 
-        keys.sort();
+        keys_owned.sort();
 
-        assert_eq!(keys[0].sequence_number(), SequenceNumber::new(3));
-        assert_eq!(keys[1].sequence_number(), SequenceNumber::new(2));
-        assert_eq!(keys[2].sequence_number(), SequenceNumber::new(1));
+        assert_eq!(keys_owned[0].sequence_number(), SequenceNumber::new(3));
+        assert_eq!(keys_owned[1].sequence_number(), SequenceNumber::new(2));
+        assert_eq!(keys_owned[2].sequence_number(), SequenceNumber::new(1));
+
+        let mut keys_borrowed = [
+            InternalKeyRef::new(b"a", SequenceNumber::new(1), ValueType::Value),
+            InternalKeyRef::new(b"a", SequenceNumber::new(3), ValueType::Value),
+            InternalKeyRef::new(b"a", SequenceNumber::new(2), ValueType::Value),
+        ];
+
+        keys_borrowed.sort();
+
+        assert_eq!(keys_borrowed[0].sequence_number(), SequenceNumber::new(3));
+        assert_eq!(keys_borrowed[1].sequence_number(), SequenceNumber::new(2));
+        assert_eq!(keys_borrowed[2].sequence_number(), SequenceNumber::new(1));
     }
 
     #[test]
